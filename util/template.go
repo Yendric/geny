@@ -2,26 +2,17 @@ package util
 
 import (
 	"html/template"
-	"sort"
 	"strings"
 	"time"
 
-	"github.com/Yendric/blog/types"
 	"golang.org/x/net/html"
 )
 
-func Mkslice(a []types.ContentFile, start int, end int) []types.ContentFile {
-	if end > len(a) {
-		end = len(a)
+func Truncate(text string) string {
+	if len(text) > 150 {
+		return text[:150] + "..."
 	}
-	return a[start:end]
-}
-
-func Truncate(s string) string {
-	if len(s) > 150 {
-		return s[:150] + "..."
-	}
-	return s
+	return text
 }
 
 func StripTags(htmlText template.HTML) string {
@@ -54,17 +45,4 @@ func StripTags(htmlText template.HTML) string {
 
 func GetCurrentYear() int {
 	return time.Now().Year()
-}
-
-func SortByDate(content []types.ContentFile) []types.ContentFile {
-	sort.Slice(content, func(i, j int) bool {
-		date1, err := time.Parse("2006-01-02", content[i].MetaData["date"])
-		date2, err := time.Parse("2006-01-02", content[j].MetaData["date"])
-		if err != nil {
-			return false
-		}
-		return date1.After(date2)
-	})
-
-	return content
 }
