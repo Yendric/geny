@@ -33,9 +33,9 @@ This is only a convention, you are free to put templates anywhere you want, as l
 
 The current contentFile can be accessed using:
 
-- `{{ .Content }}` for it's content (as html)
-- `{{ .RawContent }}` for it's content (as markdown)
-- `{{ .Url }}` to link to it's page
+- `{{ .Content }}` for its content as html
+- `{{ .RawContent }}` for its content as markdown
+- `{{ .Url }}` to link to its page
 - `{{ .MetaData }}` for metadata, which you can define yourself (see [creating content](#creating-content))
 - `{{ .Template }}` for info about the template (eg. `.Template.Name`)
 - `{{ .Collections }}` to access all other collections.\
@@ -78,7 +78,7 @@ This way, services like cloudflare pages can automatically detect the 404 page.
 
 #### Creating content
 
-Content files use markdown should start with a header, which is defined by a yaml block surrounded by `---` at the top of the file. There is one required field: `template`. It field should contain the name of the template to use for rendering the content (without .html).
+Content files use markdown and should start with a header, which is defined by a yaml block surrounded by `---` at the top of the file. There is one required field: `template`. It field should contain the name of the template to use for rendering the content (without .html).
 
 Other fields can be defined as desired, and can be referenced in templates using `{{ .MetaData.<field> }}`
 
