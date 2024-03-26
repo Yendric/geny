@@ -78,7 +78,7 @@ This way, services like cloudflare pages can automatically detect the 404 page.
 
 #### Creating content
 
-Content files use markdown and should start with a header, which is defined by a yaml block surrounded by `---` at the top of the file. There is one required field: `template`. It field should contain the name of the template to use for rendering the content (without .html).
+Content files use markdown and should start with a header, which is defined by a yaml block surrounded by `---` at the top of the file. There is one required field: `template`. This field should contain the name of the template to use for rendering the content (without .html).
 
 Other fields can be defined as desired, and can be referenced in templates using `{{ .MetaData.<field> }}`
 
