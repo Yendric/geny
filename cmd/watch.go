@@ -18,15 +18,20 @@ var watchCmd = &cobra.Command{
 	Use:     "watch",
 	Aliases: []string{"watch", "w", "run"},
 	Short:   "Continously generates the static site when files change",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := common.LoadConfig()
+		if err != nil {
+			return err
+		}
+
 		runCmd, err := cmd.Flags().GetString("run")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		defer watcher.Close()
 
@@ -45,33 +50,35 @@ var watchCmd = &cobra.Command{
 					}
 					log.Println("error:", err)
 				case <-timer.C:
-					rebuild(runCmd)
+					rebuild(cfg, runCmd)
 				}
 			}
 		}()
 
-		err = addWatchersRecursive(watcher, common.CONTENT_DIR)
-		if err != nil {
-			log.Fatal(err)
+		if err := addWatchersRecursive(watcher, cfg.ContentDir); err != nil {
+			return err
 		}
 
-		err = addWatchersRecursive(watcher, common.TEMPLATES_DIR)
-		if err != nil {
-			log.Fatal(err)
+		if err := addWatchersRecursive(watcher, cfg.TemplatesDir); err != nil {
+			return err
 		}
 
 		shouldServe, err := cmd.Flags().GetBool("serve")
-		if err != nil || !shouldServe {
+		if err != nil {
+			return err
+		}
+		if !shouldServe {
 			// Loop forever
 			<-make(chan struct{})
 		}
 
 		port, err := cmd.Flags().GetInt("port")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
-		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(port) })
+		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(cfg.BuildDir, port) })
+		return nil
 	},
 }
 
@@ -83,15 +90,13 @@ func init() {
 	watchCmd.Flags().String("run", "", "Run a command before building the site")
 }
 
-func rebuild(runCmd string) {
+func rebuild(cfg common.Config, runCmd string) {
 	runStepRecover("Rebuilding...", func() error {
-		err := os.RemoveAll(common.BUILD_DIR)
-		if err != nil {
+		if err := os.RemoveAll(cfg.BuildDir); err != nil {
 			return err
 		}
 
-		err = copy.Copy(common.PUBLIC_DIR, common.BUILD_DIR)
-		if err != nil {
+		if err := copy.Copy(cfg.PublicDir, cfg.BuildDir); err != nil {
 			return err
 		}
 
@@ -101,12 +106,11 @@ func rebuild(runCmd string) {
 			}
 		}
 
-		content, err := indexer.IndexContent()
+		content, err := indexer.IndexContent(cfg)
 		if err != nil {
 			return err
 		}
 
-		err = generator.GenerateFiles(content)
-		return err
+		return generator.GenerateFiles(cfg, content)
 	})
 }

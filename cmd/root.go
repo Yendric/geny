@@ -7,9 +7,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "geny",
-	Short: "Geny static site generator.",
-	Long:  `Geny static site generator.`,
+	Use:          "geny",
+	Short:        "Geny static site generator.",
+	Long:         `Geny static site generator.`,
+	SilenceUsage: true,
 }
 
 func Execute() {

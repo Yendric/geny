@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/Yendric/geny/common"
@@ -17,20 +16,23 @@ var buildCmd = &cobra.Command{
 	Use:     "build",
 	Aliases: []string{"b", "generate", "run"},
 	Short:   "Generates the static site",
-	Run: func(cmd *cobra.Command, args []string) {
-		runStepQuit("Removing old builds", func() error {
-			err := os.RemoveAll(common.BUILD_DIR)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := common.LoadConfig()
+		if err != nil {
 			return err
+		}
+
+		runStepQuit("Removing old builds", func() error {
+			return os.RemoveAll(cfg.BuildDir)
 		})
 
 		runStepQuit("Copying assets", func() error {
-			err := copy.Copy(common.PUBLIC_DIR, common.BUILD_DIR)
-			return err
+			return copy.Copy(cfg.PublicDir, cfg.BuildDir)
 		})
 
 		runCmd, err := cmd.Flags().GetString("run")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if runCmd != "" {
 			runStepQuit("Running custom build command", func() error {
@@ -39,28 +41,31 @@ var buildCmd = &cobra.Command{
 		}
 
 		runStepQuit("Generating html", func() error {
-			content, err := indexer.IndexContent()
+			content, err := indexer.IndexContent(cfg)
 			if err != nil {
 				return err
 			}
 
-			err = generator.GenerateFiles(content)
-			return err
+			return generator.GenerateFiles(cfg, content)
 		})
 
 		color.New(color.BgGreen).Println("Your site has been generated!")
 
 		shouldServe, err := cmd.Flags().GetBool("serve")
-		if err != nil || !shouldServe {
-			return
+		if err != nil {
+			return err
+		}
+		if !shouldServe {
+			return nil
 		}
 
 		port, err := cmd.Flags().GetInt("port")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
-		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(port) })
+		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(cfg.BuildDir, port) })
+		return nil
 	},
 }
 

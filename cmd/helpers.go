@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/Yendric/geny/common"
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
 )
@@ -70,10 +69,9 @@ func addWatchersRecursive(watcher *fsnotify.Watcher, dir string) error {
 	return nil
 }
 
-func serve(port int) error {
-	fs := http.FileServer(http.Dir(common.BUILD_DIR))
+func serve(buildDir string, port int) error {
+	fs := http.FileServer(http.Dir(buildDir))
 	http.Handle("/", fs)
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-	return err
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }

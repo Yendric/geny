@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/Yendric/geny/common"
 	"github.com/Yendric/geny/util"
 )
 
@@ -15,14 +14,14 @@ type Template struct {
 
 var templates map[string]Template = make(map[string]Template)
 
-func GetByName(name string) (*Template, error) {
+func GetByName(templatesDir, name string) (*Template, error) {
 	template, ok := templates[name]
 
 	if ok {
 		return &template, nil
 	}
 
-	html, err := os.ReadFile(util.GeneratePath(common.TEMPLATES_DIR, name+".html"))
+	html, err := os.ReadFile(util.GeneratePath(templatesDir, name+".html"))
 	if err != nil {
 		return nil, errors.New("template not found: " + name)
 	}

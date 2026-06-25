@@ -18,8 +18,8 @@ var funcMap = template.FuncMap{
 	"getCurrentYear": util.GetCurrentYear,
 }
 
-func GenerateFiles(contentFiles []content.ContentFile) error {
-	templates, err := parseTemplates()
+func GenerateFiles(cfg common.Config, contentFiles []content.ContentFile) error {
+	templates, err := parseTemplates(cfg)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func GenerateFiles(contentFiles []content.ContentFile) error {
 	for _, contentFile := range contentFiles {
 		contentFile.Collections = collections
 
-		if err := generateFile(templates, contentFile); err != nil {
+		if err := generateFile(cfg, templates, contentFile); err != nil {
 			return err
 		}
 	}
@@ -37,9 +37,9 @@ func GenerateFiles(contentFiles []content.ContentFile) error {
 	return nil
 }
 
-func parseTemplates() (*template.Template, error) {
+func parseTemplates(cfg common.Config) (*template.Template, error) {
 	var templateFiles []string
-	for _, pattern := range []string{common.TEMPLATES_DIR + "/*.html", common.TEMPLATES_DIR + "/**/*.html"} {
+	for _, pattern := range []string{cfg.TemplatesDir + "/*.html", cfg.TemplatesDir + "/**/*.html"} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			return nil, fmt.Errorf("finding templates: %w", err)
@@ -55,9 +55,9 @@ func parseTemplates() (*template.Template, error) {
 	return templates, nil
 }
 
-func generateFile(templates *template.Template, contentFile content.ContentFile) error {
+func generateFile(cfg common.Config, templates *template.Template, contentFile content.ContentFile) error {
 	whereTo := util.StripHidden(contentFile.Path)
-	whereTo = strings.ReplaceAll(whereTo, common.CONTENT_DIR, common.BUILD_DIR)
+	whereTo = strings.ReplaceAll(whereTo, cfg.ContentDir, cfg.BuildDir)
 	whereTo = util.StripExtension(whereTo)
 	whereTo = util.StripEmpty(whereTo)
 

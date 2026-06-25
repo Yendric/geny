@@ -10,8 +10,8 @@ import (
 	"github.com/Yendric/geny/util"
 )
 
-func IndexContent() ([]content.ContentFile, error) {
-	indexedContent, err := indexDirectory(common.CONTENT_DIR)
+func IndexContent(cfg common.Config) ([]content.ContentFile, error) {
+	indexedContent, err := indexDirectory(cfg, cfg.ContentDir)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +19,7 @@ func IndexContent() ([]content.ContentFile, error) {
 	return indexedContent, nil
 }
 
-func indexDirectory(directory string) ([]content.ContentFile, error) {
+func indexDirectory(cfg common.Config, directory string) ([]content.ContentFile, error) {
 	content := []content.ContentFile{}
 
 	files, err := os.ReadDir(directory)
@@ -30,14 +30,14 @@ func indexDirectory(directory string) ([]content.ContentFile, error) {
 	for _, file := range files {
 		filePath := util.GeneratePath(directory, file.Name())
 		if file.IsDir() {
-			indexedDirectory, err := indexDirectory(filePath)
+			indexedDirectory, err := indexDirectory(cfg, filePath)
 			if err != nil {
 				return nil, err
 			}
 
 			content = append(content, indexedDirectory...)
 		} else {
-			indexedFile, err := indexFile(filePath)
+			indexedFile, err := indexFile(cfg, filePath)
 			if err != nil {
 				return nil, err
 			}
@@ -49,7 +49,7 @@ func indexDirectory(directory string) ([]content.ContentFile, error) {
 	return content, nil
 }
 
-func indexFile(filePath string) (content.ContentFile, error) {
+func indexFile(cfg common.Config, filePath string) (content.ContentFile, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
@@ -69,7 +69,7 @@ func indexFile(filePath string) (content.ContentFile, error) {
 		return content.ContentFile{}, fmt.Errorf("no template declared in %s", filePath)
 	}
 
-	template, err := template.GetByName(templateName)
+	template, err := template.GetByName(cfg.TemplatesDir, templateName)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
@@ -80,7 +80,7 @@ func indexFile(filePath string) (content.ContentFile, error) {
 		RawContent: fileContent,
 		Path:       filePath,
 		FileName:   fileStats.Name(),
-		Url:        util.GenerateContentUrl(filePath),
+		Url:        util.GenerateContentUrl(cfg.ContentDir, filePath),
 		Template:   template,
 	}
 

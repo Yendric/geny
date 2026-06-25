@@ -1,19 +1,15 @@
 package util
 
-import (
-	"strings"
-
-	"github.com/Yendric/geny/common"
-)
+import "strings"
 
 func GenerateUrl(parts ...string) string {
 	return StripEmpty("/"+strings.Join(parts, "/")) + "/"
 }
 
-func GenerateContentUrl(path string) string {
+func GenerateContentUrl(contentDir, path string) string {
 	path = StripHidden(path)
 	path = StripExtension(path)
-	path = strings.ReplaceAll(path, common.CONTENT_DIR, "")
+	path = strings.ReplaceAll(path, contentDir, "")
 
 	return "/" + StripEmpty(path) + "/"
 }
