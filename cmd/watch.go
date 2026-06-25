@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/Yendric/geny/common"
@@ -97,8 +96,7 @@ func rebuild(runCmd string) {
 		}
 
 		if runCmd != "" {
-			err := exec.Command("sh", "-c", runCmd).Run()
-			if err != nil {
+			if err := runBuildCommand(runCmd); err != nil {
 				return err
 			}
 		}

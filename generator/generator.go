@@ -1,8 +1,10 @@
 package generator
 
 import (
+	"fmt"
 	"html/template"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Yendric/geny/common"
@@ -32,13 +34,18 @@ func GenerateFiles(contentFiles []content.ContentFile) error {
 }
 
 func generateFile(contentFile content.ContentFile) error {
-	template, err := template.New(contentFile.Template.Name + ".html").Funcs(funcMap).ParseGlob(common.TEMPLATES_DIR + "/*.html")
-	if err != nil {
-		return err
+	var templateFiles []string
+	for _, pattern := range []string{common.TEMPLATES_DIR + "/*.html", common.TEMPLATES_DIR + "/**/*.html"} {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return fmt.Errorf("finding templates: %w", err)
+		}
+		templateFiles = append(templateFiles, matches...)
 	}
-	template, err = template.ParseGlob(common.TEMPLATES_DIR + "/**/*.html")
+
+	template, err := template.New(contentFile.Template.Name + ".html").Funcs(funcMap).ParseFiles(templateFiles...)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing templates: %w", err)
 	}
 
 	whereTo := util.StripHidden(contentFile.Path)
@@ -50,26 +57,25 @@ func generateFile(contentFile content.ContentFile) error {
 	if contentFile.FileName == "index.md" || contentFile.FileName == "404.md" {
 		buildFile, err = os.Create(util.GeneratePath(whereTo + ".html"))
 		if err != nil {
-			return err
+			return fmt.Errorf("creating %s: %w", whereTo+".html", err)
 		}
 	} else {
 		err = os.MkdirAll(whereTo, os.ModePerm)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating directory %s: %w", whereTo, err)
 		}
 
 		buildFile, err = os.Create(util.GeneratePath(whereTo, "index.html"))
 		if err != nil {
-			return err
+			return fmt.Errorf("creating %s: %w", util.GeneratePath(whereTo, "index.html"), err)
 		}
 	}
 
 	err = template.Execute(buildFile, contentFile)
 	if err != nil {
-		return err
+		buildFile.Close()
+		return fmt.Errorf("rendering %s: %w", contentFile.Path, err)
 	}
 
-	buildFile.Close()
-
-	return nil
+	return buildFile.Close()
 }

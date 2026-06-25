@@ -1,7 +1,7 @@
 package indexer
 
 import (
-	"errors"
+	"fmt"
 	"os"
 
 	"github.com/Yendric/geny/common"
@@ -52,23 +52,26 @@ func indexDirectory(directory string) ([]content.ContentFile, error) {
 func indexFile(filePath string) (content.ContentFile, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
-		return content.ContentFile{}, err
+		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
 	}
 	fileStats, err := os.Stat(filePath)
 	if err != nil {
-		return content.ContentFile{}, err
+		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
 	}
 
-	metaData, renderedContent := ParseMdFile(fileContent)
+	metaData, renderedContent, err := ParseMdFile(fileContent)
+	if err != nil {
+		return content.ContentFile{}, fmt.Errorf("parsing markdown in %s: %w", filePath, err)
+	}
 
 	templateName, found := metaData["template"].(string)
 	if !found {
-		return content.ContentFile{}, errors.New("no template declared in file: " + filePath)
+		return content.ContentFile{}, fmt.Errorf("no template declared in %s", filePath)
 	}
 
 	template, err := template.GetByName(templateName)
 	if err != nil {
-		return content.ContentFile{}, err
+		return content.ContentFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
 
 	file := content.ContentFile{

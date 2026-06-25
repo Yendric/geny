@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 
 	"github.com/Yendric/geny/common"
 	"github.com/Yendric/geny/generator"
@@ -35,8 +34,7 @@ var buildCmd = &cobra.Command{
 		}
 		if runCmd != "" {
 			runStepQuit("Running custom build command", func() error {
-				err := exec.Command("sh", "-c", runCmd).Run()
-				return err
+				return runBuildCommand(runCmd)
 			})
 		}
 

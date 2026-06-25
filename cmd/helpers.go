@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/Yendric/geny/common"
@@ -21,17 +22,29 @@ func runStepRecover(step string, f func() error) {
 
 func runStep(step string, f func() error, quitOnFail bool) {
 	padding := 40 - len(step)
+	if padding < 0 {
+		padding = 0
+	}
+	prefix := step + "..." + strings.Repeat(" ", padding)
 
-	color.Yellow(step + "..." + strings.Repeat(" ", padding) + "[Busy]")
-	err := f()
-	if err != nil {
-		color.Red(step + "..." + strings.Repeat(" ", padding) + "[Fail]")
-		fmt.Print("Something went wrong: ", err)
+	color.Yellow(prefix + "[Busy]")
+	if err := f(); err != nil {
+		color.Red(prefix + "[Fail]")
+		fmt.Println("Something went wrong:", err)
 		if quitOnFail {
 			os.Exit(1)
 		}
+		return
 	}
-	color.Green(step + "..." + strings.Repeat(" ", padding) + "[Done]")
+	color.Green(prefix + "[Done]")
+}
+
+func runBuildCommand(runCmd string) error {
+	out, err := exec.Command("sh", "-c", runCmd).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("running %q: %w\n%s", runCmd, err, out)
+	}
+	return nil
 }
 
 func addWatchersRecursive(watcher *fsnotify.Watcher, dir string) error {
