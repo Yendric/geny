@@ -81,7 +81,5 @@ func indexFile(filePath string) (content.ContentFile, error) {
 		Template:   template,
 	}
 
-	template.RegisterContent(file)
-
 	return file, nil
 }

@@ -9,9 +9,8 @@ import (
 )
 
 type Template struct {
-	Name    string
-	GoHtml  string
-	Content []*interface{}
+	Name   string
+	GoHtml string
 }
 
 var templates map[string]Template = make(map[string]Template)
@@ -35,8 +34,4 @@ func GetByName(name string) (*Template, error) {
 	template = templates[name]
 
 	return &template, nil
-}
-
-func (template *Template) RegisterContent(content interface{}) {
-	template.Content = append(template.Content, &content)
 }
