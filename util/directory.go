@@ -1,6 +1,9 @@
 package util
 
-import "strings"
+import (
+	"path/filepath"
+	"strings"
+)
 
 func GeneratePath(parts ...string) string {
 	return StripEmpty(strings.Join(parts, "/"))
@@ -19,5 +22,5 @@ func StripHidden(path string) string {
 }
 
 func StripExtension(path string) string {
-	return strings.Split(path, ".")[0]
+	return strings.TrimSuffix(path, filepath.Ext(path))
 }
