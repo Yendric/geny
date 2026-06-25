@@ -19,13 +19,17 @@ var funcMap = template.FuncMap{
 }
 
 func GenerateFiles(contentFiles []content.ContentFile) error {
+	templates, err := parseTemplates()
+	if err != nil {
+		return err
+	}
+
 	collections := generateCollections(contentFiles)
 
 	for _, contentFile := range contentFiles {
 		contentFile.Collections = collections
 
-		err := generateFile(contentFile)
-		if err != nil {
+		if err := generateFile(templates, contentFile); err != nil {
 			return err
 		}
 	}
@@ -33,27 +37,34 @@ func GenerateFiles(contentFiles []content.ContentFile) error {
 	return nil
 }
 
-func generateFile(contentFile content.ContentFile) error {
+func parseTemplates() (*template.Template, error) {
 	var templateFiles []string
 	for _, pattern := range []string{common.TEMPLATES_DIR + "/*.html", common.TEMPLATES_DIR + "/**/*.html"} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
-			return fmt.Errorf("finding templates: %w", err)
+			return nil, fmt.Errorf("finding templates: %w", err)
 		}
 		templateFiles = append(templateFiles, matches...)
 	}
 
-	template, err := template.New(contentFile.Template.Name + ".html").Funcs(funcMap).ParseFiles(templateFiles...)
+	templates, err := template.New("").Funcs(funcMap).ParseFiles(templateFiles...)
 	if err != nil {
-		return fmt.Errorf("parsing templates: %w", err)
+		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
 
+	return templates, nil
+}
+
+func generateFile(templates *template.Template, contentFile content.ContentFile) error {
 	whereTo := util.StripHidden(contentFile.Path)
 	whereTo = strings.ReplaceAll(whereTo, common.CONTENT_DIR, common.BUILD_DIR)
 	whereTo = util.StripExtension(whereTo)
 	whereTo = util.StripEmpty(whereTo)
 
-	var buildFile *os.File
+	var (
+		buildFile *os.File
+		err       error
+	)
 	if contentFile.FileName == "index.md" || contentFile.FileName == "404.md" {
 		buildFile, err = os.Create(util.GeneratePath(whereTo + ".html"))
 		if err != nil {
@@ -71,8 +82,7 @@ func generateFile(contentFile content.ContentFile) error {
 		}
 	}
 
-	err = template.Execute(buildFile, contentFile)
-	if err != nil {
+	if err := templates.ExecuteTemplate(buildFile, contentFile.Template.Name+".html", contentFile); err != nil {
 		buildFile.Close()
 		return fmt.Errorf("rendering %s: %w", contentFile.Path, err)
 	}
