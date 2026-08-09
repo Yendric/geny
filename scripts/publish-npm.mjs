@@ -74,9 +74,23 @@ writePackage(metaDir, {
 })
 fs.copyFileSync('scripts/npm-shim.js', path.join(metaDir, 'bin', 'geny.js'))
 
+function published(name, packageVersion) {
+  try {
+    execFileSync('npm', ['view', `${name}@${packageVersion}`, 'version'], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
 for (const dir of packageDirs) {
   if (process.env.DRY_RUN) {
     console.log(`dry run: skipping npm publish of ${dir}`)
+    continue
+  }
+  const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
+  if (published(pkg.name, pkg.version)) {
+    console.log(`skipping ${pkg.name}@${pkg.version}: already published`)
     continue
   }
   execFileSync('npm', ['publish', '--access', 'public'], { cwd: dir, stdio: 'inherit' })

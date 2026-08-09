@@ -41,12 +41,40 @@ jobs:
         with:
           go-version: stable
 
+      - name: Remove release assets left by a previous run
+        if: inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release view "${{ inputs.tag }}" --json assets --jq '.assets[].name' | xargs -r -n1 gh release delete-asset "${{ inputs.tag }}" --yes
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            dist/metadata.json
+            dist/artifacts.json
+            dist/geny_*/*
+
+  npm:
+    needs: [release-please, build]
+    if: needs.release-please.outputs.release_created == 'true' || inputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
 
       - uses: actions/setup-node@v4
         with:
