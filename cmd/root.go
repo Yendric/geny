@@ -9,10 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// stamped by release build via ldflags
+var version = "dev"
+
 var rootCmd = &cobra.Command{
 	Use:          "geny",
 	Short:        "Geny static site generator.",
 	Long:         `Geny static site generator.`,
+	Version:      version,
 	SilenceUsage: true,
 }
 
