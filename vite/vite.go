@@ -59,9 +59,27 @@ func (i *Integration) devTags(base string, entries []string) template.HTML {
 	var b strings.Builder
 	b.WriteString(scriptTag(base + "/@vite/client"))
 	for _, entry := range entries {
-		b.WriteString(scriptTag(base + "/" + entry))
+		// css entries get a real stylesheet tag so the browser blocks on
+		// them instead of flashing unstyled, vite's client hot-swaps link
+		// tags on css updates
+		if isCSS(entry) {
+			b.WriteString(linkTag(base + "/" + entry))
+		} else {
+			b.WriteString(scriptTag(base + "/" + entry))
+		}
 	}
 	return template.HTML(b.String())
+}
+
+var cssExtensions = []string{".css", ".scss", ".sass", ".less", ".styl", ".stylus", ".pcss", ".postcss"}
+
+func isCSS(path string) bool {
+	for _, ext := range cssExtensions {
+		if strings.HasSuffix(path, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 func (i *Integration) prodTags(entries []string) (template.HTML, error) {

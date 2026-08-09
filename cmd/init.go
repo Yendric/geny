@@ -82,8 +82,9 @@ const genyReload = {
     let timer
     server.watcher.on('all', (event, file) => {
       if (!file.startsWith(buildDir)) return
+      if (event === 'unlink' || event === 'unlinkDir') return
       clearTimeout(timer)
-      timer = setTimeout(() => server.ws.send({ type: 'full-reload' }), 50)
+      timer = setTimeout(() => server.ws.send({ type: 'full-reload' }), 150)
     })
   },
 }

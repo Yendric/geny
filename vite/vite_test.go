@@ -113,6 +113,30 @@ func TestTagsBuildModeIgnoresHotFile(t *testing.T) {
 	}
 }
 
+func TestTagsDevModeCssEntry(t *testing.T) {
+	cfg := testConfig(t)
+	cfg.DevMode = true
+	writeFile(t, cfg.Vite.HotFile, "http://localhost:5173")
+
+	got, err := New(cfg).Tags("src/style.css", "src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := string(got)
+	for _, want := range []string{
+		`<link rel="stylesheet" href="http://localhost:5173/src/style.css">`,
+		`<script type="module" src="http://localhost:5173/src/main.js"></script>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("dev tags missing %q\ngot: %s", want, out)
+		}
+	}
+	if strings.Contains(out, `<script type="module" src="http://localhost:5173/src/style.css"></script>`) {
+		t.Errorf("css entry must not be a script tag in dev\ngot: %s", out)
+	}
+}
+
 func TestTagsProdModeCssEntry(t *testing.T) {
 	cfg := testConfig(t)
 	writeFile(t, filepath.Join(cfg.BuildDir, ".vite", "manifest.json"), `{
