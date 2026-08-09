@@ -66,6 +66,10 @@ jobs:
     needs: [release-please, build]
     if: needs.release-please.outputs.release_created == 'true' || inputs.tag != ''
     runs-on: ubuntu-latest
+    # authenticates via OIDC trusted publishing, no npm token
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,10 +82,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
+          node-version: 24
+
+      # OIDC publishing needs npm >= 11.5.1
+      - run: npm install -g npm@latest
 
       - name: Publish to npm
         run: node scripts/publish-npm.mjs
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
