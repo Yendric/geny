@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Yendric/geny/compare/v1.0.0...v1.1.0) (2026-08-09)
+
+
+### Miscellaneous Chores
+
+* test release pipeline ([9f6eced](https://github.com/Yendric/geny/commit/9f6ecedbabf5df8f2bf88ff1b2a6c11dd0b164a5))
+
 ## 1.0.0 (2026-08-09)
 
 
