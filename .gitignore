@@ -2,3 +2,6 @@
 /geny.exe
 /build
 /.vscode
+/.geny
+/node_modules
+/example

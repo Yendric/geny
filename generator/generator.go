@@ -10,12 +10,17 @@ import (
 	"github.com/Yendric/geny/common"
 	"github.com/Yendric/geny/indexer/content"
 	"github.com/Yendric/geny/util"
+	"github.com/Yendric/geny/vite"
 )
 
-var funcMap = template.FuncMap{
-	"stripTags":      util.StripTags,
-	"truncate":       util.Truncate,
-	"getCurrentYear": util.GetCurrentYear,
+func buildFuncMap(cfg common.Config) template.FuncMap {
+	v := vite.New(cfg)
+	return template.FuncMap{
+		"stripTags":      util.StripTags,
+		"truncate":       util.Truncate,
+		"getCurrentYear": util.GetCurrentYear,
+		"vite":           v.Tags,
+	}
 }
 
 func GenerateFiles(cfg common.Config, contentFiles []content.ContentFile) error {
@@ -47,7 +52,7 @@ func parseTemplates(cfg common.Config) (*template.Template, error) {
 		templateFiles = append(templateFiles, matches...)
 	}
 
-	templates, err := template.New("").Funcs(funcMap).ParseFiles(templateFiles...)
+	templates, err := template.New("").Funcs(buildFuncMap(cfg)).ParseFiles(templateFiles...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}

@@ -106,5 +106,32 @@ Example: `geny build --serve --port 3000`
 
 CSS and other static files can be placed in the `public` directory. These files will be copied to the root of the generated site.
 
-It it possible to configure a build step in the `--run` flag.\
-For example: `geny build --run "npm run build"` will run `npm run build` in the root of the project before generating the site.
+### Using Vite for js and css
+
+Geny integrates with [Vite](https://vite.dev) for bundling js and css. The easiest way to get started is running `geny init` in an empty directory, which scaffolds a working site (run `npm install` once afterwards). To enable it on an existing site, add the following to `geny.yaml`:
+
+```yaml
+vite:
+  enabled: true
+```
+
+Then load your entry points in a template using the `vite` function:
+
+```html
+{{ vite "src/main.js" }}
+```
+
+Pass all entry points for a page to a single `vite` call (it is variadic, every call emits its own dev-server client tag).
+
+During `geny watch`, geny starts the Vite dev server alongside it and the tag points at it, giving you hot module replacement for js/css and automatic browser reloads when content or templates change. During `geny build`, geny runs `vite build` and the tag resolves to the hashed script and stylesheet files from the build manifest.
+
+The commands used, the dev server URL and the hot file location can be overridden in the `vite` section of `geny.yaml` (defaults shown):
+
+```yaml
+vite:
+  enabled: true
+  buildCommand: npm run build
+  devCommand: npm run dev
+  devServerURL: http://localhost:5173
+  hotFile: .geny/hot
+```

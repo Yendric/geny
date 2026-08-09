@@ -30,13 +30,9 @@ var buildCmd = &cobra.Command{
 			return copy.Copy(cfg.PublicDir, cfg.BuildDir)
 		})
 
-		runCmd, err := cmd.Flags().GetString("run")
-		if err != nil {
-			return err
-		}
-		if runCmd != "" {
-			runStepQuit("Running custom build command", func() error {
-				return runBuildCommand(runCmd)
+		if cfg.Vite.Enabled {
+			runStepQuit("Building assets with Vite", func() error {
+				return runBuildCommand(cfg.Vite.BuildCommand)
 			})
 		}
 
@@ -64,7 +60,7 @@ var buildCmd = &cobra.Command{
 			return err
 		}
 
-		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(cfg.BuildDir, port) })
+		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(cmd.Context(), cfg.BuildDir, port) })
 		return nil
 	},
 }
@@ -74,5 +70,4 @@ func init() {
 
 	buildCmd.Flags().BoolP("serve", "s", false, "Serve the site on a local webserver")
 	buildCmd.Flags().IntP("port", "p", 8080, "Change the local webserver port from the default 8080")
-	buildCmd.Flags().String("run", "", "Run a command before building the site")
 }
