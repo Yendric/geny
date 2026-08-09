@@ -6,7 +6,31 @@ A small and efficient static site generator written in Go.
 
 ## Installation
 
-You can install geny by downloading the latest release from the [releases page](https://github.com/Yendric/geny/releases).
+### npm (recommended)
+
+If your site uses npm (which it does if you use the Vite integration), install geny as a dev dependency:
+
+```sh
+npm install --save-dev @yendric/geny
+```
+
+Then run it with `npx geny`, or from package.json scripts:
+
+```json
+"scripts": {
+  "build": "geny build"
+}
+```
+
+### Prebuilt binaries
+
+Download the latest release from the [releases page](https://github.com/Yendric/geny/releases) (linux/macOS/windows, amd64/arm64).
+
+### go install
+
+```sh
+go install github.com/Yendric/geny@latest
+```
 
 ### Building from source
 
