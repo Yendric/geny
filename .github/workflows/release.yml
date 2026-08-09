@@ -2,17 +2,39 @@ name: release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)build and publish"
+        required: true
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  release:
+  # Tags created here use GITHUB_TOKEN, whose events trigger no other
+  # workflows, so the build must be a job in this same workflow.
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: go
+
+  build:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true' || inputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
           fetch-depth: 0
 
       - uses: actions/setup-go@v5
