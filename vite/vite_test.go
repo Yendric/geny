@@ -113,6 +113,26 @@ func TestTagsBuildModeIgnoresHotFile(t *testing.T) {
 	}
 }
 
+func TestTagsProdModeCssEntry(t *testing.T) {
+	cfg := testConfig(t)
+	writeFile(t, filepath.Join(cfg.BuildDir, ".vite", "manifest.json"), `{
+		"src/style.css": {"file": "assets/style-abc123.css", "isEntry": true}
+	}`)
+
+	got, err := New(cfg).Tags("src/style.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := string(got)
+	if !strings.Contains(out, `<link rel="stylesheet" href="/assets/style-abc123.css">`) {
+		t.Errorf("expected stylesheet link for css entry\ngot: %s", out)
+	}
+	if strings.Contains(out, "<script") {
+		t.Errorf("css entry must not emit a script tag\ngot: %s", out)
+	}
+}
+
 func TestTagsProdModeUnknownEntry(t *testing.T) {
 	cfg := testConfig(t)
 	writeFile(t, filepath.Join(cfg.BuildDir, ".vite", "manifest.json"), `{}`)

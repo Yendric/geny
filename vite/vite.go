@@ -87,7 +87,14 @@ func (i *Integration) prodTags(entries []string) (template.HTML, error) {
 				b.WriteString(linkTag("/" + css))
 			}
 		}
-		b.WriteString(scriptTag("/" + chunk.File))
+		if strings.HasSuffix(chunk.File, ".css") {
+			if !seenCSS[chunk.File] {
+				seenCSS[chunk.File] = true
+				b.WriteString(linkTag("/" + chunk.File))
+			}
+		} else {
+			b.WriteString(scriptTag("/" + chunk.File))
+		}
 	}
 	return template.HTML(b.String()), nil
 }
