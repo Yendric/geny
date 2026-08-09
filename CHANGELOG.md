@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Yendric/geny/compare/v1.2.0...v1.2.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* prevent flash of unstyled content in dev mode ([f220313](https://github.com/Yendric/geny/commit/f220313d7e964912a1afb858ac3bcc98ddbdb28c))
+
 ## [1.2.0](https://github.com/Yendric/geny/compare/v1.1.0...v1.2.0) (2026-08-09)
 
 
