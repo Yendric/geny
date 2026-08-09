@@ -5,8 +5,7 @@ import (
 	"os"
 
 	"github.com/Yendric/geny/common"
-	"github.com/Yendric/geny/generator"
-	"github.com/Yendric/geny/indexer"
+	"github.com/Yendric/geny/site"
 	"github.com/fatih/color"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cobra"
@@ -36,14 +35,7 @@ var buildCmd = &cobra.Command{
 			})
 		}
 
-		runStepQuit("Generating html", func() error {
-			content, err := indexer.IndexContent(cfg)
-			if err != nil {
-				return err
-			}
-
-			return generator.GenerateFiles(cfg, content)
-		})
+		runStepQuit("Generating html", site.New(cfg).Generate)
 
 		color.New(color.BgGreen).Println("Your site has been generated!")
 

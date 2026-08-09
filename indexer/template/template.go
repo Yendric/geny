@@ -8,29 +8,32 @@ import (
 )
 
 type Template struct {
-	Name   string
-	GoHtml string
+	Name string
 }
 
-var templates map[string]Template = make(map[string]Template)
+type Registry struct {
+	dir       string
+	templates map[string]*Template
+}
 
-func GetByName(templatesDir, name string) (*Template, error) {
-	template, ok := templates[name]
+func NewRegistry(dir string) *Registry {
+	return &Registry{
+		dir:       dir,
+		templates: make(map[string]*Template),
+	}
+}
 
-	if ok {
-		return &template, nil
+// resolves template names, caching them in the registry
+func (r *Registry) GetByName(name string) (*Template, error) {
+	if template, ok := r.templates[name]; ok {
+		return template, nil
 	}
 
-	html, err := os.ReadFile(util.GeneratePath(templatesDir, name+".html"))
-	if err != nil {
+	if _, err := os.Stat(util.GeneratePath(r.dir, name+".html")); err != nil {
 		return nil, errors.New("template not found: " + name)
 	}
-	templates[name] = Template{
-		Name:   name,
-		GoHtml: string(html),
-	}
 
-	template = templates[name]
-
-	return &template, nil
+	template := &Template{Name: name}
+	r.templates[name] = template
+	return template, nil
 }

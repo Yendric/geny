@@ -8,19 +8,28 @@ import (
 	"github.com/Yendric/geny/indexer/content"
 	"github.com/Yendric/geny/indexer/template"
 	"github.com/Yendric/geny/util"
+	"github.com/yuin/goldmark"
 )
 
-func IndexContent(cfg common.Config) ([]content.ContentFile, error) {
-	indexedContent, err := indexDirectory(cfg, cfg.ContentDir)
-	if err != nil {
-		return nil, err
-	}
-
-	return indexedContent, nil
+type Indexer struct {
+	cfg common.Config
+	md  goldmark.Markdown
 }
 
-func indexDirectory(cfg common.Config, directory string) ([]content.ContentFile, error) {
-	content := []content.ContentFile{}
+func New(cfg common.Config) *Indexer {
+	return &Indexer{
+		cfg: cfg,
+		md:  newMarkdown(),
+	}
+}
+
+func (i *Indexer) IndexContent() ([]content.ContentFile, error) {
+	templates := template.NewRegistry(i.cfg.TemplatesDir)
+	return i.indexDirectory(templates, i.cfg.ContentDir)
+}
+
+func (i *Indexer) indexDirectory(templates *template.Registry, directory string) ([]content.ContentFile, error) {
+	indexed := []content.ContentFile{}
 
 	files, err := os.ReadDir(directory)
 	if err != nil {
@@ -30,26 +39,26 @@ func indexDirectory(cfg common.Config, directory string) ([]content.ContentFile,
 	for _, file := range files {
 		filePath := util.GeneratePath(directory, file.Name())
 		if file.IsDir() {
-			indexedDirectory, err := indexDirectory(cfg, filePath)
+			indexedDirectory, err := i.indexDirectory(templates, filePath)
 			if err != nil {
 				return nil, err
 			}
 
-			content = append(content, indexedDirectory...)
+			indexed = append(indexed, indexedDirectory...)
 		} else {
-			indexedFile, err := indexFile(cfg, filePath)
+			indexedFile, err := i.indexFile(templates, filePath)
 			if err != nil {
 				return nil, err
 			}
 
-			content = append(content, indexedFile)
+			indexed = append(indexed, indexedFile)
 		}
 	}
 
-	return content, nil
+	return indexed, nil
 }
 
-func indexFile(cfg common.Config, filePath string) (content.ContentFile, error) {
+func (i *Indexer) indexFile(templates *template.Registry, filePath string) (content.ContentFile, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
@@ -59,7 +68,7 @@ func indexFile(cfg common.Config, filePath string) (content.ContentFile, error) 
 		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
 	}
 
-	metaData, renderedContent, err := ParseMdFile(fileContent)
+	metaData, renderedContent, err := i.parseMdFile(fileContent)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("parsing markdown in %s: %w", filePath, err)
 	}
@@ -69,7 +78,7 @@ func indexFile(cfg common.Config, filePath string) (content.ContentFile, error) 
 		return content.ContentFile{}, fmt.Errorf("no template declared in %s", filePath)
 	}
 
-	template, err := template.GetByName(cfg.TemplatesDir, templateName)
+	fileTemplate, err := templates.GetByName(templateName)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
@@ -80,8 +89,8 @@ func indexFile(cfg common.Config, filePath string) (content.ContentFile, error) 
 		RawContent: fileContent,
 		Path:       filePath,
 		FileName:   fileStats.Name(),
-		Url:        util.GenerateContentUrl(cfg.ContentDir, filePath),
-		Template:   template,
+		Url:        util.GenerateContentUrl(i.cfg.ContentDir, filePath),
+		Template:   fileTemplate,
 	}
 
 	return file, nil

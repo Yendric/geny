@@ -7,7 +7,6 @@ func generateCollections(contentFiles []content.ContentFile) *content.Collection
 
 	for _, contentFile := range contentFiles {
 		collections[contentFile.Template.Name] = append(collections[contentFile.Template.Name], contentFile)
-		contentFile.Collections = &collections
 	}
 
 	return &collections

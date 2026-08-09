@@ -12,27 +12,26 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-var md = goldmark.New(
-	goldmark.WithExtensions(
-		extension.GFM,
-		extension.Table,
-		highlighting.NewHighlighting(
-			highlighting.WithStyle("vulcan"),
+func newMarkdown() goldmark.Markdown {
+	return goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Table,
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("vulcan"),
+			),
+			meta.Meta,
 		),
-		meta.Meta,
-	),
-	goldmark.WithRendererOptions(html.WithUnsafe()),
-)
+		goldmark.WithRendererOptions(html.WithUnsafe()),
+	)
+}
 
-func ParseMdFile(mdFile []byte) (map[string]interface{}, template.HTML, error) {
+func (i *Indexer) parseMdFile(mdFile []byte) (map[string]interface{}, template.HTML, error) {
 	var buf bytes.Buffer
 	context := parser.NewContext()
-	err := md.Convert(mdFile, &buf, parser.WithContext(context))
-	if err != nil {
+	if err := i.md.Convert(mdFile, &buf, parser.WithContext(context)); err != nil {
 		return nil, "", err
 	}
 
-	metaData := meta.Get(context)
-
-	return metaData, template.HTML(buf.String()), nil
+	return meta.Get(context), template.HTML(buf.String()), nil
 }

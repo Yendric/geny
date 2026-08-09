@@ -13,6 +13,23 @@ import (
 	"github.com/Yendric/geny/vite"
 )
 
+type Generator struct {
+	cfg       common.Config
+	templates *template.Template
+}
+
+func New(cfg common.Config) (*Generator, error) {
+	templates, err := parseTemplates(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Generator{
+		cfg:       cfg,
+		templates: templates,
+	}, nil
+}
+
 func buildFuncMap(cfg common.Config) template.FuncMap {
 	v := vite.New(cfg)
 	return template.FuncMap{
@@ -23,18 +40,13 @@ func buildFuncMap(cfg common.Config) template.FuncMap {
 	}
 }
 
-func GenerateFiles(cfg common.Config, contentFiles []content.ContentFile) error {
-	templates, err := parseTemplates(cfg)
-	if err != nil {
-		return err
-	}
-
+func (g *Generator) GenerateFiles(contentFiles []content.ContentFile) error {
 	collections := generateCollections(contentFiles)
 
 	for _, contentFile := range contentFiles {
 		contentFile.Collections = collections
 
-		if err := generateFile(cfg, templates, contentFile); err != nil {
+		if err := g.generateFile(contentFile); err != nil {
 			return err
 		}
 	}
@@ -60,9 +72,9 @@ func parseTemplates(cfg common.Config) (*template.Template, error) {
 	return templates, nil
 }
 
-func generateFile(cfg common.Config, templates *template.Template, contentFile content.ContentFile) error {
+func (g *Generator) generateFile(contentFile content.ContentFile) error {
 	whereTo := util.StripHidden(contentFile.Path)
-	whereTo = strings.ReplaceAll(whereTo, cfg.ContentDir, cfg.BuildDir)
+	whereTo = strings.ReplaceAll(whereTo, g.cfg.ContentDir, g.cfg.BuildDir)
 	whereTo = util.StripExtension(whereTo)
 	whereTo = util.StripEmpty(whereTo)
 
@@ -87,7 +99,7 @@ func generateFile(cfg common.Config, templates *template.Template, contentFile c
 		}
 	}
 
-	if err := templates.ExecuteTemplate(buildFile, contentFile.Template.Name+".html", contentFile); err != nil {
+	if err := g.templates.ExecuteTemplate(buildFile, contentFile.Template.Name+".html", contentFile); err != nil {
 		buildFile.Close()
 		return fmt.Errorf("rendering %s: %w", contentFile.Path, err)
 	}

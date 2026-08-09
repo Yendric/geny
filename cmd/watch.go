@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/Yendric/geny/common"
-	"github.com/Yendric/geny/generator"
-	"github.com/Yendric/geny/indexer"
+	"github.com/Yendric/geny/site"
 	"github.com/Yendric/geny/vite"
 	"github.com/fsnotify/fsnotify"
 	"github.com/otiai10/copy"
@@ -46,6 +45,8 @@ var watchCmd = &cobra.Command{
 		}
 		defer watcher.Close()
 
+		s := site.New(cfg)
+
 		go func() {
 			timer := time.NewTimer(0)
 			for {
@@ -74,7 +75,7 @@ var watchCmd = &cobra.Command{
 					}
 					log.Println("error:", err)
 				case <-timer.C:
-					rebuild(cfg)
+					rebuild(cfg, s)
 				}
 			}
 		}()
@@ -121,7 +122,7 @@ func init() {
 
 // rebuild clears the build directory's contents instead of deleting it:
 // watchers (e.g. Vite's) holding the directory open would not survive that.
-func rebuild(cfg common.Config) {
+func rebuild(cfg common.Config, s *site.Site) {
 	runStepRecover("Rebuilding...", func() error {
 		if err := clearDir(cfg.BuildDir); err != nil {
 			return err
@@ -131,11 +132,6 @@ func rebuild(cfg common.Config) {
 			return err
 		}
 
-		content, err := indexer.IndexContent(cfg)
-		if err != nil {
-			return err
-		}
-
-		return generator.GenerateFiles(cfg, content)
+		return s.Generate()
 	})
 }
