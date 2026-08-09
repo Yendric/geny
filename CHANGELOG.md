@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Yendric/geny/compare/v1.1.0...v1.2.0) (2026-08-09)
+
+
+### Features
+
+* support css entry points in vite integration ([490c0b5](https://github.com/Yendric/geny/commit/490c0b58726234f3489d62ed2a44ddfcf13a96aa))
+
 ## [1.1.0](https://github.com/Yendric/geny/compare/v1.0.0...v1.1.0) (2026-08-09)
 
 
