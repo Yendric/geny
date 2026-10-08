@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/Yendric/geny/compare/v1.3.0...v1.4.0) (2026-10-08)
+
+
+### Features
+
+* expose page headings to templates ([d8f0ff2](https://github.com/Yendric/geny/commit/d8f0ff275915644ff80e1cf14b645b2312d13e7c))
+* **vite:** reload the browser from the geny plugin ([66d35b4](https://github.com/Yendric/geny/commit/66d35b4da823f77b00d4ce47a8ce128bc336c3f3))
+
 ## [1.3.0](https://github.com/Yendric/geny/compare/v1.2.1...v1.3.0) (2026-10-08)
 
 
