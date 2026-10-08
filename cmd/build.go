@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/Yendric/geny/common"
@@ -62,7 +63,7 @@ var buildCmd = &cobra.Command{
 			return err
 		}
 
-		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(cmd.Context(), cfg.BuildDir, port) })
+		runStepQuit(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(cmd.Context(), http.FileServer(http.Dir(cfg.BuildDir)), port) })
 		return nil
 	},
 }

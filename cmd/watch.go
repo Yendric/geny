@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Yendric/geny/common"
@@ -52,6 +54,7 @@ var watchCmd = &cobra.Command{
 
 		s := site.New(cfg)
 		checks := startIslandChecker(ctx)
+		gate := newBuildGate()
 		var last site.Result
 
 		go func() {
@@ -68,6 +71,7 @@ var watchCmd = &cobra.Command{
 					if event.Op == fsnotify.Chmod {
 						continue
 					}
+					gate.pending()
 
 					// watch newly created directories
 					if event.Op.Has(fsnotify.Create) {
@@ -100,6 +104,7 @@ var watchCmd = &cobra.Command{
 							last = result
 						}
 					}
+					gate.done()
 					checks.request(last)
 				}
 			}
@@ -140,7 +145,7 @@ var watchCmd = &cobra.Command{
 			return err
 		}
 
-		return runStepE(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(ctx, cfg.BuildDir, port) })
+		return runStepE(fmt.Sprintf("Serving the site on port %d", port), func() error { return serve(ctx, gate.hold(http.FileServer(http.Dir(cfg.BuildDir))), port) })
 	},
 }
 
@@ -183,6 +188,50 @@ func islandSetChanged(cfg common.Config, last site.Result) bool {
 func isInDir(path, dir string) bool {
 	rel, err := filepath.Rel(dir, path)
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// holds page requests while a rebuild is pending, so a browser reload
+// triggered by the source change itself never sees the previous build
+type buildGate struct {
+	mu    sync.Mutex
+	ready chan struct{}
+}
+
+func newBuildGate() *buildGate {
+	return &buildGate{ready: make(chan struct{})}
+}
+
+func (g *buildGate) pending() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.ready:
+		g.ready = make(chan struct{})
+	default:
+	}
+}
+
+func (g *buildGate) done() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.ready:
+	default:
+		close(g.ready)
+	}
+}
+
+func (g *buildGate) hold(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		g.mu.Lock()
+		ready := g.ready
+		g.mu.Unlock()
+		select {
+		case <-ready:
+			next.ServeHTTP(w, r)
+		case <-r.Context().Done():
+		}
+	})
 }
 
 type islandChecker struct {

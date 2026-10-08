@@ -77,12 +77,10 @@ func addWatchersRecursive(watcher *fsnotify.Watcher, dir string) error {
 	return nil
 }
 
-func serve(ctx context.Context, buildDir string, port int) error {
-	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir(buildDir)))
+func serve(ctx context.Context, handler http.Handler, port int) error {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Handler: handler,
 	}
 
 	go func() {
