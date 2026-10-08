@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/Yendric/geny/compare/v1.2.1...v1.3.0) (2026-10-08)
+
+
+### Features
+
+* add interactive islands ([2f86e5e](https://github.com/Yendric/geny/commit/2f86e5e9a1d2a82203f9d1d1213d572eb2810cc5))
+
+
+### Bug Fixes
+
+* **init:** load the stylesheet as its own vite entry ([59f714e](https://github.com/Yendric/geny/commit/59f714e078ee6bb8444375ef2b04d280f7febb8f))
+* **watch:** hold requests until the rebuild finishes ([c81949a](https://github.com/Yendric/geny/commit/c81949aa34f3eee99908fe3d803e25df20884a0f))
+
 ## [1.2.1](https://github.com/Yendric/geny/compare/v1.2.0...v1.2.1) (2026-08-09)
 
 
