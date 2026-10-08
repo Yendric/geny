@@ -123,7 +123,7 @@ export default defineConfig({
     // geny copies public/ into build/ before running vite build.
     emptyOutDir: false,
     rollupOptions: {
-      input: ['src/main.js'],
+      input: ['src/style.css'],
     },
   },
 })
@@ -142,8 +142,6 @@ export default defineConfig({
   },
   "include": ["src", "islands"]
 }
-`},
-		{"src/main.js", `import './style.css'
 `},
 		{"islands/Counter.tsx", `import { useState } from 'react'
 
@@ -173,7 +171,7 @@ export default function Counter({ start }: Props) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .MetaData.title }}</title>
-    {{ vite "src/main.js" }}
+    {{ vite "src/style.css" }}
   </head>
   <body>
     <main>{{ .Content }}</main>

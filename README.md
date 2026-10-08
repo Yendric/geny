@@ -142,10 +142,12 @@ vite:
 Then load your entry points in a template using the `vite` function:
 
 ```html
-{{ vite "src/main.js" }}
+{{ vite "src/style.css" "src/main.js" }}
 ```
 
 Pass all entry points for a page to a single `vite` call (it is variadic, every call emits its own dev-server client tag).
+
+Load stylesheets as their own entry instead of importing them from JavaScript. In dev, Vite injects imported CSS with a script, so the page renders unstyled until it runs.
 
 During `geny watch`, geny starts the Vite dev server alongside it and the tag points at it, giving you hot module replacement for js/css and automatic browser reloads when content or templates change. During `geny build`, geny runs `vite build` and the tag resolves to the hashed script and stylesheet files from the build manifest.
 
