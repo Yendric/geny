@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/Yendric/geny/compare/v1.4.0...v1.5.0) (2026-10-08)
+
+
+### Features
+
+* add sprig template functions ([c39814a](https://github.com/Yendric/geny/commit/c39814a943e73c8d95fa61302041fc0c7ec46ed9))
+
 ## [1.4.0](https://github.com/Yendric/geny/compare/v1.3.0...v1.4.0) (2026-10-08)
 
 
