@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/Yendric/geny/compare/v1.5.0...v1.5.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **islands:** hydrate islands added after page load ([018ce29](https://github.com/Yendric/geny/commit/018ce294bcf28e96f1aec5510e844a20a479105f))
+
 ## [1.5.0](https://github.com/Yendric/geny/compare/v1.4.0...v1.5.0) (2026-10-08)
 
 
