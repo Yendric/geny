@@ -7,6 +7,7 @@ import (
 	"github.com/Yendric/geny/common"
 	"github.com/Yendric/geny/indexer/content"
 	"github.com/Yendric/geny/indexer/template"
+	"github.com/Yendric/geny/islands"
 	"github.com/Yendric/geny/util"
 	"github.com/yuin/goldmark"
 )
@@ -23,12 +24,19 @@ func New(cfg common.Config) *Indexer {
 	}
 }
 
-func (i *Indexer) IndexContent() ([]content.ContentFile, error) {
-	templates := template.NewRegistry(i.cfg.TemplatesDir)
-	return i.indexDirectory(templates, i.cfg.ContentDir)
+type registries struct {
+	templates *template.Registry
+	islands   *islands.Registry
 }
 
-func (i *Indexer) indexDirectory(templates *template.Registry, directory string) ([]content.ContentFile, error) {
+func (i *Indexer) IndexContent(islandRegistry *islands.Registry) ([]content.ContentFile, error) {
+	return i.indexDirectory(registries{
+		templates: template.NewRegistry(i.cfg.TemplatesDir),
+		islands:   islandRegistry,
+	}, i.cfg.ContentDir)
+}
+
+func (i *Indexer) indexDirectory(reg registries, directory string) ([]content.ContentFile, error) {
 	indexed := []content.ContentFile{}
 
 	files, err := os.ReadDir(directory)
@@ -39,14 +47,14 @@ func (i *Indexer) indexDirectory(templates *template.Registry, directory string)
 	for _, file := range files {
 		filePath := util.GeneratePath(directory, file.Name())
 		if file.IsDir() {
-			indexedDirectory, err := i.indexDirectory(templates, filePath)
+			indexedDirectory, err := i.indexDirectory(reg, filePath)
 			if err != nil {
 				return nil, err
 			}
 
 			indexed = append(indexed, indexedDirectory...)
 		} else {
-			indexedFile, err := i.indexFile(templates, filePath)
+			indexedFile, err := i.indexFile(reg, filePath)
 			if err != nil {
 				return nil, err
 			}
@@ -58,7 +66,7 @@ func (i *Indexer) indexDirectory(templates *template.Registry, directory string)
 	return indexed, nil
 }
 
-func (i *Indexer) indexFile(templates *template.Registry, filePath string) (content.ContentFile, error) {
+func (i *Indexer) indexFile(reg registries, filePath string) (content.ContentFile, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
@@ -68,24 +76,28 @@ func (i *Indexer) indexFile(templates *template.Registry, filePath string) (cont
 		return content.ContentFile{}, fmt.Errorf("reading %s: %w", filePath, err)
 	}
 
-	metaData, renderedContent, err := i.parseMdFile(fileContent)
+	parsed, err := i.parseMdFile(reg.islands, fileContent)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("parsing markdown in %s: %w", filePath, err)
 	}
+	for n := range parsed.islands {
+		parsed.islands[n].Source = filePath
+	}
 
-	templateName, found := metaData["template"].(string)
+	templateName, found := parsed.metaData["template"].(string)
 	if !found {
 		return content.ContentFile{}, fmt.Errorf("no template declared in %s", filePath)
 	}
 
-	fileTemplate, err := templates.GetByName(templateName)
+	fileTemplate, err := reg.templates.GetByName(templateName)
 	if err != nil {
 		return content.ContentFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
 
 	file := content.ContentFile{
-		MetaData:   metaData,
-		Content:    renderedContent,
+		MetaData:   parsed.metaData,
+		Content:    parsed.html,
+		Islands:    parsed.islands,
 		RawContent: fileContent,
 		Path:       filePath,
 		FileName:   fileStats.Name(),

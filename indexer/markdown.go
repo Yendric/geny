@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 
+	"github.com/Yendric/geny/islands"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting"
 	meta "github.com/yuin/goldmark-meta"
@@ -21,17 +22,31 @@ func newMarkdown() goldmark.Markdown {
 				highlighting.WithStyle("vulcan"),
 			),
 			meta.Meta,
+			islands.Extension,
 		),
 		goldmark.WithRendererOptions(html.WithUnsafe()),
 	)
 }
 
-func (i *Indexer) parseMdFile(mdFile []byte) (map[string]interface{}, template.HTML, error) {
+type parsedMarkdown struct {
+	metaData map[string]interface{}
+	html     template.HTML
+	islands  []islands.Usage
+}
+
+func (i *Indexer) parseMdFile(reg *islands.Registry, mdFile []byte) (parsedMarkdown, error) {
 	var buf bytes.Buffer
-	context := parser.NewContext()
+	context, collector := islands.NewParserContext(reg)
 	if err := i.md.Convert(mdFile, &buf, parser.WithContext(context)); err != nil {
-		return nil, "", err
+		return parsedMarkdown{}, err
+	}
+	if err := collector.Err(); err != nil {
+		return parsedMarkdown{}, err
 	}
 
-	return meta.Get(context), template.HTML(buf.String()), nil
+	return parsedMarkdown{
+		metaData: meta.Get(context),
+		html:     template.HTML(buf.String()),
+		islands:  collector.Usages(),
+	}, nil
 }

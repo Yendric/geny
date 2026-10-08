@@ -6,6 +6,7 @@ import (
 
 	"github.com/Yendric/geny/common"
 	"github.com/Yendric/geny/site"
+	"github.com/Yendric/geny/vite"
 	"github.com/fatih/color"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cobra"
@@ -31,11 +32,20 @@ var buildCmd = &cobra.Command{
 
 		if cfg.Vite.Enabled {
 			runStepQuit("Building assets with Vite", func() error {
-				return runBuildCommand(cfg.Vite.BuildCommand)
+				return vite.Build(cfg)
 			})
 		}
 
-		runStepQuit("Generating html", site.New(cfg).Generate)
+		var result site.Result
+		runStepQuit("Generating html", func() error {
+			var err error
+			result, err = site.New(cfg).Generate()
+			return err
+		})
+
+		if len(result.Usages) > 0 {
+			runStepQuit("Checking island props", result.CheckIslands)
+		}
 
 		color.New(color.BgGreen).Println("Your site has been generated!")
 

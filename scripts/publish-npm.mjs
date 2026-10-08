@@ -2,7 +2,7 @@
 // one binary package per platform, plus a meta package that picks the right 
 // one at runtime
 //
-// Requires dist/ from `goreleaser release` and npm auth
+// Requires dist/ from `goreleaser release`, a built npm/dist and npm auth
 // Set DRY_RUN=1 to build the packages without publishing
 
 import { execFileSync } from 'node:child_process'
@@ -62,17 +62,23 @@ if (Object.keys(optionalDependencies).length === 0) {
   throw new Error('no binaries found in dist/artifacts.json')
 }
 
+const pluginPackage = JSON.parse(fs.readFileSync('npm/package.json', 'utf8'))
 const metaDir = 'dist/npm/geny'
 writePackage(metaDir, {
-  name: `${SCOPE}/geny`,
+  name: pluginPackage.name,
   version,
   description: 'A small and efficient static site generator written in Go.',
   repository: REPOSITORY,
   license: 'MIT',
-  bin: { geny: 'bin/geny.js' },
+  type: pluginPackage.type,
+  bin: { geny: 'bin/geny.cjs' },
+  exports: pluginPackage.exports,
+  peerDependencies: pluginPackage.peerDependencies,
+  peerDependenciesMeta: pluginPackage.peerDependenciesMeta,
   optionalDependencies,
 })
-fs.copyFileSync('scripts/npm-shim.js', path.join(metaDir, 'bin', 'geny.js'))
+fs.copyFileSync('scripts/npm-shim.js', path.join(metaDir, 'bin', 'geny.cjs'))
+fs.cpSync('npm/dist', path.join(metaDir, 'dist'), { recursive: true })
 
 function published(name, packageVersion) {
   try {

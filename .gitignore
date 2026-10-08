@@ -6,3 +6,5 @@
 /node_modules
 /example
 /dist
+/npm/node_modules
+/npm/dist

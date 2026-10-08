@@ -159,3 +159,93 @@ vite:
   devServerURL: http://localhost:5173
   hotFile: .geny/hot
 ```
+
+### Islands
+
+Islands are interactive React components placed on otherwise static pages. Only pages that use an island load JavaScript for it, and each island loads its own code when it hydrates.
+
+#### Setup
+
+Islands need the Vite integration plus React. `geny init` sets this up.
+If you prefer to manually set this up, you can do so as follows:
+
+```sh
+npm install react react-dom
+npm install --save-dev @yendric/geny @vitejs/plugin-react typescript @types/react @types/react-dom
+```
+
+```js
+// vite.config.js
+import react from "@vitejs/plugin-react";
+import geny from "@yendric/geny/vite";
+
+export default defineConfig({
+  plugins: [react(), geny()],
+  // ...
+});
+```
+
+#### Writing an island
+
+To create an island, simply put your components in the `islands` directory as a `.tsx` or `.jsx`, with a default export.
+The file path is the island name (eg. `islands/ui/Button.tsx` is `ui/Button`).
+Do not use an HTML element name for your island, as it will not work.
+
+```tsx
+// islands/Counter.tsx
+import { useState } from "react";
+
+type Props = { start: number };
+
+export default function Counter({ start }: Props) {
+  const [count, setCount] = useState(start);
+  return (
+    <button onClick={() => setCount(count + 1)}>Clicked {count} times</button>
+  );
+}
+```
+
+#### Using islands in markdown
+
+Any tag whose name matches an island is rendered as that island:
+
+```md
+<Counter client:visible start={5} label="Clicks" />
+
+<Counter start={0}>
+Loading counter...
+</Counter>
+```
+
+- `"text"` or `'text'` passes a string, `{...}` passes JSON (`{5}`, `{[1, 2]}`, `{{"a": 1}}`) and a bare attribute passes `true`.
+- Content between the opening and closing tag is rendered as markdown and shown until the island mounts. A tag with content must start on its own line, and the closing tag must be on its own line.
+- Inside a paragraph, islands must be self-closing.
+
+#### Using islands in templates
+
+In go templates we use a builder pattern to render the islands, with a final render call at the end.
+
+```html
+{{ island "Counter" | render }} {{ island "Counter" | props "start" 5 | props
+"label" .MetaData.title | client "visible" | fallback (include
+"counter-fallback" .) | render }}
+```
+
+Just like in markdown, you can also add a fallback: `include` renders a named template to HTML, so a fallback can be defined with `{{ define "counter-fallback" }}...{{ end }}`.
+
+#### Hydration
+
+- `client:load` (default) mounts the island as soon as the page loads.
+- `client:visible` mounts the island once it scrolls into view.
+
+#### Type checking props
+
+geny checks the props of every island usage against the component's `Props` type with `tsc`. During `geny build`, type errors fail the build and point to the file and line of the usage. During `geny watch`, they are printed as warnings. The check uses `tsconfig.json` at the site root when present.
+
+#### Configuration
+
+The islands directory can be changed in `geny.yaml`:
+
+```yaml
+islandsDir: islands
+```

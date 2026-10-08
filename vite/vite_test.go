@@ -165,3 +165,39 @@ func TestTagsProdModeUnknownEntry(t *testing.T) {
 		t.Fatal("expected error for entry missing from manifest")
 	}
 }
+
+func TestIslandTagsDevMode(t *testing.T) {
+	cfg := testConfig(t)
+	cfg.DevMode = true
+	writeFile(t, cfg.Vite.HotFile, "http://localhost:5173")
+
+	got, err := New(cfg).IslandTags()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := string(got)
+	for _, want := range []string{
+		`import RefreshRuntime from "http://localhost:5173/@react-refresh"`,
+		`<script type="module" src="http://localhost:5173/@id/virtual:geny/islands"></script>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("island dev tags missing %q\ngot: %s", want, out)
+		}
+	}
+}
+
+func TestIslandTagsProdMode(t *testing.T) {
+	cfg := testConfig(t)
+	writeFile(t, filepath.Join(cfg.BuildDir, ".vite", "manifest.json"), `{
+		"virtual:geny/islands": {"file": "assets/islands-abc123.js", "isEntry": true}
+	}`)
+
+	got, err := New(cfg).IslandTags()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `<script type="module" src="/assets/islands-abc123.js"></script>`; string(got) != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+}

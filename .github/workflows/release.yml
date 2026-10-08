@@ -87,5 +87,9 @@ jobs:
       # OIDC publishing needs npm >= 11.5.1
       - run: npm install -g npm@latest
 
+      - name: Build the vite plugin
+        working-directory: npm
+        run: npm ci && npm run build
+
       - name: Publish to npm
         run: node scripts/publish-npm.mjs

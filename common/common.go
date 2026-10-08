@@ -9,13 +9,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const ConfigFile = "geny.yaml"
+const (
+	ConfigFile = "geny.yaml"
+	StateDir   = ".geny"
+)
 
 type Config struct {
 	ContentDir   string     `yaml:"contentDir"`
 	TemplatesDir string     `yaml:"templatesDir"`
 	BuildDir     string     `yaml:"buildDir"`
 	PublicDir    string     `yaml:"publicDir"`
+	IslandsDir   string     `yaml:"islandsDir"`
 	Vite         ViteConfig `yaml:"vite"`
 
 	// DevMode is set by `geny watch`, used to make sure
@@ -38,12 +42,13 @@ func DefaultConfig() Config {
 		TemplatesDir: "templates",
 		BuildDir:     "build",
 		PublicDir:    "public",
+		IslandsDir:   "islands",
 		Vite: ViteConfig{
 			Enabled:      false,
 			BuildCommand: "npm run build",
 			DevCommand:   "npm run dev",
 			DevServerURL: "http://localhost:5173",
-			HotFile:      ".geny/hot",
+			HotFile:      StateDir + "/hot",
 		},
 	}
 }

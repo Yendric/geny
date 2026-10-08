@@ -4,6 +4,7 @@ import (
 	goTemplate "html/template"
 
 	"github.com/Yendric/geny/indexer/template"
+	"github.com/Yendric/geny/islands"
 )
 
 type ContentFile struct {
@@ -15,4 +16,5 @@ type ContentFile struct {
 	MetaData    map[string]interface{}
 	Template    *template.Template
 	Collections *Collections
+	Islands     []islands.Usage
 }

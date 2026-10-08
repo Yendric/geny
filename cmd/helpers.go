@@ -10,25 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Yendric/geny/util"
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
 )
 
 func runStepQuit(step string, f func() error) {
-	runStep(step, f, true)
-}
-
-func runStepRecover(step string, f func() error) {
-	runStep(step, f, false)
-}
-
-func runStep(step string, f func() error, quitOnFail bool) {
 	if err := runStepE(step, f); err != nil {
 		fmt.Println("Something went wrong:", err)
-		if quitOnFail {
-			os.Exit(1)
-		}
+		os.Exit(1)
 	}
 }
 
@@ -45,14 +34,6 @@ func runStepE(step string, f func() error) error {
 		return err
 	}
 	color.Green(prefix + "[Done]")
-	return nil
-}
-
-func runBuildCommand(runCmd string) error {
-	out, err := util.ShellCommand(runCmd).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("running %q: %w\n%s", runCmd, err, out)
-	}
 	return nil
 }
 

@@ -14,7 +14,7 @@ var initCmd = &cobra.Command{
 	Short: "Scaffolds a new geny site with Vite in the current directory",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		created := 0
-		for _, file := range scaffold {
+		for _, file := range scaffold() {
 			if _, err := os.Stat(file.path); err == nil {
 				color.Yellow("skipped %s (already exists)", file.path)
 				continue
@@ -50,27 +50,49 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 }
 
-var scaffold = []struct {
+// the npm package ships the vite plugin, so it must match this binary
+func genyPackageVersion() string {
+	if version == "dev" {
+		return "latest"
+	}
+	return "^" + version
+}
+
+type scaffoldFile struct {
 	path     string
 	contents string
-}{
-	{"geny.yaml", `vite:
+}
+
+func scaffold() []scaffoldFile {
+	return []scaffoldFile{
+		{"geny.yaml", `vite:
   enabled: true
 `},
-	{"package.json", `{
+		{"package.json", `{
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build"
   },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
   "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "@yendric/geny": "` + genyPackageVersion() + `",
+    "typescript": "^5.9.0",
     "vite": "^7.1.0"
   }
 }
 `},
-	{"vite.config.js", `import { resolve } from 'node:path'
+		{"vite.config.js", `import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import geny from '@yendric/geny/vite'
 
 // Reloads the browser when geny regenerates the build directory.
 const genyReload = {
@@ -90,7 +112,7 @@ const genyReload = {
 }
 
 export default defineConfig({
-  plugins: [genyReload],
+  plugins: [react(), geny(), genyReload],
   server: {
     // geny writes the configured dev server URL into its hot file
     strictPort: true,
@@ -106,18 +128,46 @@ export default defineConfig({
   },
 })
 `},
-	{"src/main.js", `import './style.css'
-
-console.log('geny + vite is running')
+		{"tsconfig.json", `{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "islands"]
+}
 `},
-	{"src/style.css", `body {
+		{"src/main.js", `import './style.css'
+`},
+		{"islands/Counter.tsx", `import { useState } from 'react'
+
+type Props = {
+  start: number
+}
+
+export default function Counter({ start }: Props) {
+  const [count, setCount] = useState(start)
+  return (
+    <button type="button" onClick={() => setCount(count + 1)}>
+      Clicked {count} {count === 1 ? 'time' : 'times'}
+    </button>
+  )
+}
+`},
+		{"src/style.css", `body {
   font-family: system-ui, sans-serif;
   max-width: 65ch;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
 `},
-	{"templates/default.html", `<!DOCTYPE html>
+		{"templates/default.html", `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -130,7 +180,7 @@ console.log('geny + vite is running')
   </body>
 </html>
 `},
-	{"content/index.md", `---
+		{"content/index.md", `---
 template: default
 title: Welcome to geny
 ---
@@ -138,9 +188,12 @@ title: Welcome to geny
 # Welcome to geny
 
 Edit ` + "`content/index.md`" + ` to change this page.
+
+<Counter client:load start={0} />
 `},
-	{".gitignore", `/build
+		{".gitignore", `/build
 /node_modules
 /.geny
 `},
+	}
 }

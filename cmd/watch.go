@@ -1,14 +1,19 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Yendric/geny/common"
+	"github.com/Yendric/geny/islands"
 	"github.com/Yendric/geny/site"
 	"github.com/Yendric/geny/vite"
+	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cobra"
@@ -46,9 +51,13 @@ var watchCmd = &cobra.Command{
 		defer watcher.Close()
 
 		s := site.New(cfg)
+		checks := startIslandChecker(ctx)
+		var last site.Result
 
 		go func() {
 			timer := time.NewTimer(0)
+			needsRebuild := true
+			islandsTouched := false
 			for {
 				select {
 				case event, ok := <-watcher.Events:
@@ -68,6 +77,11 @@ var watchCmd = &cobra.Command{
 							}
 						}
 					}
+					if isInDir(event.Name, cfg.IslandsDir) {
+						islandsTouched = true
+					} else {
+						needsRebuild = true
+					}
 					timer.Reset(time.Millisecond * 100)
 				case err, ok := <-watcher.Errors:
 					if !ok {
@@ -75,7 +89,18 @@ var watchCmd = &cobra.Command{
 					}
 					log.Println("error:", err)
 				case <-timer.C:
-					rebuild(cfg, s)
+					// island edits only change types, vite hot-reloads the code itself
+					if islandsTouched && !needsRebuild {
+						needsRebuild = islandSetChanged(cfg, last)
+					}
+					islandsTouched = false
+					if needsRebuild {
+						needsRebuild = false
+						if result, ok := rebuild(cfg, s); ok {
+							last = result
+						}
+					}
+					checks.request(last)
 				}
 			}
 		}()
@@ -86,6 +111,12 @@ var watchCmd = &cobra.Command{
 
 		if err := addWatchersRecursive(watcher, cfg.TemplatesDir); err != nil {
 			return err
+		}
+
+		if _, err := os.Stat(cfg.IslandsDir); err == nil {
+			if err := addWatchersRecursive(watcher, cfg.IslandsDir); err != nil {
+				return err
+			}
 		}
 
 		if _, err := os.Stat(cfg.PublicDir); err == nil {
@@ -122,8 +153,9 @@ func init() {
 
 // rebuild clears the build directory's contents instead of deleting it:
 // watchers (e.g. Vite's) holding the directory open would not survive that.
-func rebuild(cfg common.Config, s *site.Site) {
-	runStepRecover("Rebuilding...", func() error {
+func rebuild(cfg common.Config, s *site.Site) (site.Result, bool) {
+	var result site.Result
+	err := runStepE("Rebuilding...", func() error {
 		if err := clearDir(cfg.BuildDir); err != nil {
 			return err
 		}
@@ -132,6 +164,56 @@ func rebuild(cfg common.Config, s *site.Site) {
 			return err
 		}
 
-		return s.Generate()
+		var err error
+		result, err = s.Generate()
+		return err
 	})
+	if err != nil {
+		fmt.Println("Something went wrong:", err)
+		return result, false
+	}
+	return result, true
+}
+
+func islandSetChanged(cfg common.Config, last site.Result) bool {
+	current, err := islands.Scan(cfg.IslandsDir)
+	return err != nil || last.Islands == nil || !current.SameNames(last.Islands)
+}
+
+func isInDir(path, dir string) bool {
+	rel, err := filepath.Rel(dir, path)
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+type islandChecker struct {
+	results chan site.Result
+}
+
+// runs island prop checks in the background, only the latest request is kept
+func startIslandChecker(ctx context.Context) islandChecker {
+	c := islandChecker{results: make(chan site.Result, 1)}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case result := <-c.results:
+				if err := result.CheckIslands(); err != nil {
+					color.Yellow("Island props do not type check:\n%v", err)
+				}
+			}
+		}
+	}()
+	return c
+}
+
+func (c islandChecker) request(result site.Result) {
+	if len(result.Usages) == 0 {
+		return
+	}
+	select {
+	case <-c.results:
+	default:
+	}
+	c.results <- result
 }

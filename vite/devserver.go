@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/Yendric/geny/common"
-	"github.com/Yendric/geny/util"
 	"github.com/fatih/color"
 )
 
@@ -19,7 +18,7 @@ func StartDevServer(cfg common.Config) (func(), error) {
 		return nil, fmt.Errorf("vite: creating hot file directory: %w", err)
 	}
 
-	cmd := util.ShellCommand(cfg.Vite.DevCommand)
+	cmd := command(cfg, cfg.Vite.DevCommand)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	setProcessGroup(cmd)

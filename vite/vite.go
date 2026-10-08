@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/Yendric/geny/common"
+	"github.com/Yendric/geny/islands"
 )
 
 type Integration struct {
@@ -41,6 +42,25 @@ func (i *Integration) Tags(entries ...string) (template.HTML, error) {
 		}
 	}
 	return i.prodTags(entries)
+}
+
+func (i *Integration) IslandTags() (template.HTML, error) {
+	if i.dev {
+		if base, ok := i.devServer(); ok {
+			return template.HTML(reactRefreshPreamble(base) + scriptTag(base+"/@vite/client") + scriptTag(base+"/@id/"+islands.RuntimeEntry)), nil
+		}
+	}
+	return i.prodTags([]string{islands.RuntimeEntry})
+}
+
+func reactRefreshPreamble(base string) string {
+	return fmt.Sprintf(`<script type="module">
+import RefreshRuntime from "%s/@react-refresh"
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type
+window.__vite_plugin_react_preamble_installed__ = true
+</script>`, base)
 }
 
 func (i *Integration) devServer() (string, bool) {
