@@ -89,30 +89,12 @@ func scaffold() []scaffoldFile {
   }
 }
 `},
-		{"vite.config.js", `import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
+		{"vite.config.js", `import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import geny from '@yendric/geny/vite'
 
-// Reloads the browser when geny regenerates the build directory.
-const genyReload = {
-  name: 'geny-reload',
-  configureServer(server) {
-    const buildDir = resolve('build')
-    server.watcher.add(buildDir)
-
-    let timer
-    server.watcher.on('all', (event, file) => {
-      if (!file.startsWith(buildDir)) return
-      if (event === 'unlink' || event === 'unlinkDir') return
-      clearTimeout(timer)
-      timer = setTimeout(() => server.ws.send({ type: 'full-reload' }), 150)
-    })
-  },
-}
-
 export default defineConfig({
-  plugins: [react(), geny(), genyReload],
+  plugins: [react(), geny()],
   server: {
     // geny writes the configured dev server URL into its hot file
     strictPort: true,

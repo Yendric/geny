@@ -9,11 +9,14 @@ import (
 	"github.com/Yendric/geny/util"
 )
 
-const islandsDirEnv = "GENY_ISLANDS_DIR"
-
 func command(cfg common.Config, run string) *exec.Cmd {
 	cmd := util.ShellCommand(run)
-	cmd.Env = append(os.Environ(), islandsDirEnv+"="+cfg.IslandsDir)
+	cmd.Env = append(os.Environ(),
+		"GENY_CONTENT_DIR="+cfg.ContentDir,
+		"GENY_TEMPLATES_DIR="+cfg.TemplatesDir,
+		"GENY_PUBLIC_DIR="+cfg.PublicDir,
+		"GENY_ISLANDS_DIR="+cfg.IslandsDir,
+	)
 	return cmd
 }
 

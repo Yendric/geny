@@ -139,6 +139,23 @@ vite:
   enabled: true
 ```
 
+Install the geny Vite plugin and add it to `vite.config.js`. It reloads the browser when content, templates or public files change, and builds islands.
+
+```sh
+npm install --save-dev @yendric/geny
+```
+
+```js
+// vite.config.js
+import { defineConfig } from "vite";
+import geny from "@yendric/geny/vite";
+
+export default defineConfig({
+  plugins: [geny()],
+  // ...
+});
+```
+
 Then load your entry points in a template using the `vite` function:
 
 ```html
@@ -173,13 +190,12 @@ If you prefer to manually set this up, you can do so as follows:
 
 ```sh
 npm install react react-dom
-npm install --save-dev @yendric/geny @vitejs/plugin-react typescript @types/react @types/react-dom
+npm install --save-dev @vitejs/plugin-react typescript @types/react @types/react-dom
 ```
 
 ```js
 // vite.config.js
 import react from "@vitejs/plugin-react";
-import geny from "@yendric/geny/vite";
 
 export default defineConfig({
   plugins: [react(), geny()],
