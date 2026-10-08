@@ -98,6 +98,7 @@ func (i *Indexer) indexFile(reg registries, filePath string) (content.ContentFil
 		MetaData:   parsed.metaData,
 		Content:    parsed.html,
 		Islands:    parsed.islands,
+		Headings:   parsed.headings,
 		RawContent: fileContent,
 		Path:       filePath,
 		FileName:   fileStats.Name(),

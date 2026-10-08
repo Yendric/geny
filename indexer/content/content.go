@@ -3,6 +3,7 @@ package content
 import (
 	goTemplate "html/template"
 
+	"github.com/Yendric/geny/headings"
 	"github.com/Yendric/geny/indexer/template"
 	"github.com/Yendric/geny/islands"
 )
@@ -17,4 +18,5 @@ type ContentFile struct {
 	Template    *template.Template
 	Collections *Collections
 	Islands     []islands.Usage
+	Headings    headings.Headings
 }

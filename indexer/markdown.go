@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 
+	"github.com/Yendric/geny/headings"
 	"github.com/Yendric/geny/islands"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting"
@@ -11,6 +12,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
 )
 
 func newMarkdown() goldmark.Markdown {
@@ -24,6 +26,7 @@ func newMarkdown() goldmark.Markdown {
 			meta.Meta,
 			islands.Extension,
 		),
+		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithHeadingAttribute()),
 		goldmark.WithRendererOptions(html.WithUnsafe()),
 	)
 }
@@ -32,15 +35,22 @@ type parsedMarkdown struct {
 	metaData map[string]interface{}
 	html     template.HTML
 	islands  []islands.Usage
+	headings headings.Headings
 }
 
 func (i *Indexer) parseMdFile(reg *islands.Registry, mdFile []byte) (parsedMarkdown, error) {
 	var buf bytes.Buffer
 	context, collector := islands.NewParserContext(reg)
-	if err := i.md.Convert(mdFile, &buf, parser.WithContext(context)); err != nil {
+	doc := i.md.Parser().Parse(text.NewReader(mdFile), parser.WithContext(context))
+	if err := i.md.Renderer().Render(&buf, mdFile, doc); err != nil {
 		return parsedMarkdown{}, err
 	}
 	if err := collector.Err(); err != nil {
+		return parsedMarkdown{}, err
+	}
+
+	pageHeadings, err := headings.Extract(doc, mdFile, i.md.Renderer())
+	if err != nil {
 		return parsedMarkdown{}, err
 	}
 
@@ -48,5 +58,6 @@ func (i *Indexer) parseMdFile(reg *islands.Registry, mdFile []byte) (parsedMarkd
 		metaData: meta.Get(context),
 		html:     template.HTML(buf.String()),
 		islands:  collector.Usages(),
+		headings: pageHeadings,
 	}, nil
 }

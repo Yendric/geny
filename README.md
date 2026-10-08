@@ -67,6 +67,7 @@ The current contentFile can be accessed using:
   For example, if you have a template called `post`, you can access all posts using `{{ .Collections.post }}`
 - `{{ .Path }}` for the filepath
 - `{{ .FileName }}` for the filename
+- `{{ .Headings }}` for the headings in its content (see [headings](#headings))
 
 #### Utility functions
 
@@ -117,6 +118,41 @@ title: Yendrics blog - Home
 ```
 
 PS: the markdown renderer also supports styled code blocks.
+
+### Headings
+
+Every heading in the content gets an `id`, generated from its text (`## Getting started` becomes `getting-started`, duplicates get `-1`, `-2`, ...). Set your own with `{#id}`:
+
+```md
+## Getting started {#start}
+```
+
+`{{ .Headings }}` holds the headings of a page as a tree. Each heading has:
+
+- `.Level`: 1 for `#`, 2 for `##`, ...
+- `.ID`: the `id` to link to
+- `.Text`: the heading as plain text
+- `.HTML`: the heading with its inline markup, such as `code` or *emphasis*
+- `.Children`: the headings nested under it
+
+`.Headings.Between 2 3` returns only the headings from level 2 to 3, nested again. A table of contents for a sidebar:
+
+```html
+{{ define "toc" }}
+<ul>
+  {{ range . }}
+  <li>
+    <a href="#{{ .ID }}">{{ .HTML }}</a>
+    {{ if .Children }}{{ template "toc" .Children }}{{ end }}
+  </li>
+  {{ end }}
+</ul>
+{{ end }}
+
+<nav>{{ template "toc" .Headings.Between 2 3 }}</nav>
+```
+
+Headings inside island content are left out.
 
 ### Generating your site
 
