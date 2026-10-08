@@ -73,9 +73,17 @@ The current contentFile can be accessed using:
 
 Geny provides a few utility functions that can be used in templates:
 
-- `Truncate(string)` truncates a string to 150 characters.
-- `StripTags(string)` removes all html tags from a string.
-- `GetCurrentYear()` returns the current year.
+- `truncate string` truncates a string to 150 characters.
+- `stripTags html` removes all html tags from a string.
+- `getCurrentYear` returns the current year.
+
+All [Sprig](https://masterminds.github.io/sprig/) functions are available as well, for dates, math, strings, lists and more:
+
+```html
+{{ toDate "2006-01-02" .MetaData.date | date "January 2, 2006" }}
+{{ .MetaData.title | upper | trunc 20 }}
+{{ add 1 2 }}
+```
 
 Collections also have helper methods on them:
 

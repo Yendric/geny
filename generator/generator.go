@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/Yendric/geny/common"
 	"github.com/Yendric/geny/indexer/content"
 	"github.com/Yendric/geny/islands"
@@ -139,7 +140,7 @@ func (g *Generator) parseTemplates() (*template.Template, error) {
 		templateFiles = append(templateFiles, matches...)
 	}
 
-	templates, err := template.New("").Funcs(g.funcMap()).Funcs((&page{}).funcs()).ParseFiles(templateFiles...)
+	templates, err := template.New("").Funcs(sprig.HtmlFuncMap()).Funcs(g.funcMap()).Funcs((&page{}).funcs()).ParseFiles(templateFiles...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
