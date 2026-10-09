@@ -37,7 +37,27 @@ func New(cfg common.Config, islandRegistry *islands.Registry) (*Generator, error
 	}
 	g.templates = templates
 
+	if err := g.addComponents(); err != nil {
+		return nil, err
+	}
 	return g, nil
+}
+
+func (g *Generator) addComponents() error {
+	files, err := filepath.Glob(g.cfg.TemplatesDir + "/components/*.html")
+	if err != nil {
+		return fmt.Errorf("finding components: %w", err)
+	}
+	templates, err := g.templates.Clone()
+	if err != nil {
+		return err
+	}
+	components := map[string]*template.Template{}
+	for _, file := range files {
+		name := filepath.Base(file)
+		components[strings.TrimSuffix(name, ".html")] = templates.Lookup(name)
+	}
+	return g.islands.SetComponents(components)
 }
 
 func (g *Generator) funcMap() template.FuncMap {
@@ -45,6 +65,7 @@ func (g *Generator) funcMap() template.FuncMap {
 		"stripTags":      util.StripTags,
 		"truncate":       util.Truncate,
 		"getCurrentYear": util.GetCurrentYear,
+		"fileInfo":       g.fileInfo,
 		"vite":           g.vite.Tags,
 		"island":         g.island,
 		"props":          props,
@@ -58,6 +79,14 @@ func (g *Generator) island(name string) (islands.Island, error) {
 		return islands.Island{}, fmt.Errorf("island %s not found in %s", name, g.cfg.IslandsDir)
 	}
 	return islands.New(name), nil
+}
+
+func (g *Generator) fileInfo(path string) (util.FileInfo, error) {
+	info, err := util.GetFileInfo(filepath.Join(g.cfg.PublicDir, path))
+	if err != nil {
+		return info, fmt.Errorf("fileInfo %s: %w", path, err)
+	}
+	return info, nil
 }
 
 func props(key string, value interface{}, island islands.Island) (islands.Island, error) {

@@ -33,12 +33,12 @@ func (s *Site) Generate() (Result, error) {
 		return Result{}, err
 	}
 
-	contentFiles, err := s.indexer.IndexContent(islandRegistry)
+	gen, err := generator.New(s.cfg, islandRegistry)
 	if err != nil {
 		return Result{}, err
 	}
 
-	gen, err := generator.New(s.cfg, islandRegistry)
+	contentFiles, err := s.indexer.IndexContent(islandRegistry)
 	if err != nil {
 		return Result{}, err
 	}
