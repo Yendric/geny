@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/Yendric/geny/compare/v1.5.1...v1.6.0) (2026-10-09)
+
+
+### Features
+
+* add template components ([d4f922c](https://github.com/Yendric/geny/commit/d4f922cd25c89c55380f634840478719fa05e180))
+* add template components ([d9a57c8](https://github.com/Yendric/geny/commit/d9a57c8cddd373a00c38e8556c8bef45655c2737))
+
 ## [1.5.1](https://github.com/Yendric/geny/compare/v1.5.0...v1.5.1) (2026-10-08)
 
 
