@@ -76,6 +76,7 @@ Geny provides a few utility functions that can be used in templates:
 - `truncate string` truncates a string to 150 characters.
 - `stripTags html` removes all html tags from a string.
 - `getCurrentYear` returns the current year.
+- `fileInfo path` returns the `Name`, `Size` (eg. `3.5 KB`) and `Lines` of a file in the `public` directory (eg. `fileInfo "/assets/files/script.sh"`).
 
 All [Sprig](https://masterminds.github.io/sprig/) functions are available as well, for dates, math, strings, lists and more:
 
@@ -222,6 +223,29 @@ vite:
   devServerURL: http://localhost:5173
   hotFile: .geny/hot
 ```
+
+### Components
+
+Components are go templates that can be used as tags in markdown, rendered at build time without any JavaScript.
+Put them in `templates/components`, the file name is the component name (eg. `templates/components/FileDownload.html` is `FileDownload`).
+
+```html
+<!-- templates/components/FileDownload.html -->
+{{ $f := fileInfo .Props.src }}
+<a href="{{ .Props.src }}" download>{{ $f.Name }} ({{ $f.Size }})</a>
+<div>{{ .Children }}</div>
+```
+
+```md
+<FileDownload src="/assets/files/script.sh" />
+
+<FileDownload src="/assets/files/script.sh">
+Some *markdown* description.
+</FileDownload>
+```
+
+Tags follow the same rules as [islands in markdown](#using-islands-in-markdown). `.Props` holds the attributes and `.Children` the content between the tags, rendered as markdown.
+A component cannot have the same name as an island.
 
 ### Islands
 

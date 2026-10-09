@@ -2,6 +2,7 @@ package islands
 
 import (
 	"bytes"
+	"html/template"
 	"strings"
 	"testing"
 
@@ -100,5 +101,45 @@ func TestMarkdownErrors(t *testing.T) {
 		if c.Err() == nil {
 			t.Errorf("%s: expected error", name)
 		}
+	}
+}
+
+func componentRegistry(t *testing.T) *Registry {
+	t.Helper()
+	reg := testRegistry(t, "Counter")
+	box := template.Must(template.New("Box.html").Parse(`<div class="{{ .Props.kind }}">{{ .Children }}</div>`))
+	if err := reg.SetComponents(map[string]*template.Template{"Box": box}); err != nil {
+		t.Fatal(err)
+	}
+	return reg
+}
+
+func TestMarkdownComponentWithChildren(t *testing.T) {
+	out, c := render(t, componentRegistry(t), "<Box kind=\"note\">\nHello *world*\n</Box>\n\nAfter\n")
+	if err := c.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if want := "<div class=\"note\"><p>Hello <em>world</em></p>\n</div><p>After</p>"; !strings.Contains(out, want) {
+		t.Errorf("got:\n%s\nwant to contain:\n%s", out, want)
+	}
+	if len(c.Usages()) != 0 {
+		t.Errorf("components must not be island usages: %+v", c.Usages())
+	}
+}
+
+func TestMarkdownInlineComponent(t *testing.T) {
+	out, c := render(t, componentRegistry(t), "See <Box kind=\"tip\" /> here\n")
+	if err := c.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if want := `<p>See <div class="tip"></div> here</p>`; !strings.Contains(out, want) || len(c.Usages()) != 0 {
+		t.Errorf("got:\n%s\nusages: %+v", out, c.Usages())
+	}
+}
+
+func TestComponentIslandNameClash(t *testing.T) {
+	err := testRegistry(t, "Box").SetComponents(map[string]*template.Template{"Box": template.New("Box.html")})
+	if err == nil {
+		t.Error("expected name clash error")
 	}
 }

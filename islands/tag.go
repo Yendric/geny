@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 )
 
 var errNotIsland = errors.New("not an island")
 
 type tag struct {
 	island      Island
+	component   *template.Template
 	end         int
 	selfClosing bool
 }
@@ -21,13 +23,14 @@ func parseTag(src []byte, start int, reg *Registry) (tag, error) {
 		return tag{}, errNotIsland
 	}
 	name := s.name()
-	if !reg.Has(name) {
+	if !reg.Has(name) && reg.components[name] == nil {
 		return tag{}, errNotIsland
 	}
 	t, err := s.tagBody(New(name))
 	if err != nil {
 		return tag{}, fmt.Errorf("island %s: %w", name, err)
 	}
+	t.component = reg.components[name]
 	return t, nil
 }
 

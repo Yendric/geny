@@ -96,7 +96,8 @@ type Usage struct {
 }
 
 type Registry struct {
-	files map[string]string
+	files      map[string]string
+	components map[string]*template.Template
 }
 
 func Scan(dir string) (*Registry, error) {
@@ -147,6 +148,16 @@ func hasIslandExtension(path string) bool {
 func (r *Registry) Has(name string) bool {
 	_, ok := r.files[name]
 	return ok
+}
+
+func (r *Registry) SetComponents(components map[string]*template.Template) error {
+	for name := range components {
+		if r.Has(name) {
+			return fmt.Errorf("%s is both an island and a component, rename one", name)
+		}
+	}
+	r.components = components
+	return nil
 }
 
 func (r *Registry) File(name string) (string, bool) {

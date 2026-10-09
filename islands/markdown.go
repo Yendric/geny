@@ -2,8 +2,10 @@ package islands
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -61,7 +63,8 @@ var (
 type blockNode struct {
 	ast.BaseBlock
 	// underlying island component
-	island Island
+	island    Island
+	component *template.Template
 	// source offset past opening tag
 	tagEnd int
 	// source offset for opening tags '<'
@@ -80,7 +83,8 @@ func (n *blockNode) Dump(source []byte, level int) {
 
 type inlineNode struct {
 	ast.BaseInline
-	island Island
+	island    Island
+	component *template.Template
 }
 
 func (n *inlineNode) Kind() ast.NodeKind { return KindInline }
@@ -118,8 +122,10 @@ func (blockParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) 
 		return nil, parser.NoChildren
 	}
 
-	c.record(t.island, src, start)
-	return &blockNode{island: t.island, tagEnd: t.end, tagOffset: start, selfClosing: t.selfClosing}, parser.NoChildren
+	if t.component == nil {
+		c.record(t.island, src, start)
+	}
+	return &blockNode{island: t.island, component: t.component, tagEnd: t.end, tagOffset: start, selfClosing: t.selfClosing}, parser.NoChildren
 }
 
 func restOfLine(src []byte, pos int) []byte {
@@ -188,22 +194,38 @@ func (inlineParser) Parse(parent ast.Node, block text.Reader, pc parser.Context)
 		return nil
 	}
 
-	c.record(t.island, src, segment.Start)
+	if t.component == nil {
+		c.record(t.island, src, segment.Start)
+	}
 	block.Advance(t.end - segment.Start)
-	return &inlineNode{island: t.island}
+	return &inlineNode{island: t.island, component: t.component}
 }
 
-type nodeRenderer struct{}
+type nodeRenderer struct {
+	md renderer.Renderer
+}
 
-func (nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(KindBlock, renderBlock)
+func (r nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(KindBlock, r.renderBlock)
 	reg.Register(KindInline, renderInline)
 }
 
-func renderBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r nodeRenderer) renderBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	n, ok := node.(*blockNode)
 	if !ok {
 		return ast.WalkStop, fmt.Errorf("unexpected node %s", node.Kind())
+	}
+	if n.component != nil {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		var children bytes.Buffer
+		for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+			if err := r.md.Render(&children, source, child); err != nil {
+				return ast.WalkStop, err
+			}
+		}
+		return ast.WalkSkipChildren, renderComponent(w, n.component, n.island, template.HTML(children.String()))
 	}
 	if entering {
 		_, _ = w.WriteString(n.island.openTag())
@@ -220,10 +242,28 @@ func renderInline(w util.BufWriter, source []byte, node ast.Node, entering bool)
 	if !ok {
 		return ast.WalkStop, fmt.Errorf("unexpected node %s", node.Kind())
 	}
+	if entering && n.component != nil {
+		return ast.WalkContinue, renderComponent(w, n.component, n.island, "")
+	}
 	if entering {
 		_, _ = w.WriteString(string(n.island.HTML()))
 	}
 	return ast.WalkContinue, nil
+}
+
+func renderComponent(w util.BufWriter, t *template.Template, island Island, children template.HTML) error {
+	var props map[string]interface{}
+	if err := json.Unmarshal([]byte(island.PropsJSON()), &props); err != nil {
+		return err
+	}
+	data := struct {
+		Props    map[string]interface{}
+		Children template.HTML
+	}{props, children}
+	if err := t.Execute(w, data); err != nil {
+		return fmt.Errorf("component %s: %w", island.Name, err)
+	}
+	return nil
 }
 
 type extension struct{}
@@ -235,5 +275,5 @@ func (extension) Extend(m goldmark.Markdown) {
 		parser.WithBlockParsers(util.Prioritized(blockParser{}, 850)),
 		parser.WithInlineParsers(util.Prioritized(inlineParser{}, 350)),
 	)
-	m.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(nodeRenderer{}, 100)))
+	m.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(nodeRenderer{m.Renderer()}, 100)))
 }
